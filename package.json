@@ -22,6 +22,7 @@
   "dependencies": {
     "commander": "^2.8.1",
     "q": "^1.4.1",
-    "restler": "^3.3.0"
+    "restler": "^3.3.0",
+    "xmlbuilder": "^2.6.4"
   }
 }
