@@ -6,6 +6,7 @@ var LangAPI = require('./langapi');
 
 var langApi;
 
+var fs = require('fs');
 var writers = require('./writers');
 
 function list(val) {
@@ -91,17 +92,21 @@ program
           exitWithError('must specify application filter or section filter');
         } else {
 
+          var output = new writers.ConsoleOutput();
+          var stream;
+
+          if (program.output) {
+            stream = fs.createWriteStream(program.output);
+            output = new writers.FileOutput(stream);
+          }
+
           var writer;
 
           if (!writers[program.format]) {
             exitWithError("unsupported translation format " + program.format);
           } else {
-            writer = new writers[program.format]();
+            writer = new writers[program.format](output);
           }
-
-          /*langApi.translations(program.language, program.application, program.section, null, program.ver).on('complete', function(data) {
-            console.log('got %j translations', data.length);
-          });*/
 
           Q.all([entriesPromise(), translationsPromise()])
             .spread(function(entries, translations) {
@@ -139,12 +144,18 @@ program
               }
 
               writer.write(data, note, program);
+
+              if (stream) {
+                stream.end();
+              }
             })
             .catch(function(error) {
-              //throw new error;
+              if (stream) {
+                stream.end();
+              }
+
               exitWithError(error);
-            })
-            .done();
+            });
         }
         break;
 

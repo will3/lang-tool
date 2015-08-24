@@ -1,32 +1,61 @@
-function TextWriter() {
+function ConsoleOutput() {
+  this.write = function(text) {
+    console.log(text);
+  }
+}
+
+function FileOutput(stream) {
+  this.write = function(text) {
+    stream.write(text);
+  }
+}
+
+function CompositeOutput() {
+  this.write = function(text) {
+    for (var i = 0; i < arguments.length; i++) {
+      arguments[i].write(text);
+    };
+  }
+}
+
+function TextWriter(output) {
+  if (!output && !output.write)
+    throw new Error('Must specify ouput');
+
   this.write = function(data, note, program) {
-    console.log('');
-    console.log("Translation to %j for apps '%j', sections '%j'", program.language, program.application, program.section);
-    console.log(note);
-    console.log('');
+    output.write('');
+    output.write('Translation to ' + program.language + ' for apps ' + JSON.stringify(program.application) + ', sections ' + JSON.stringify(program.section));
+    output.write(note);
+    output.write('');
     for (var i = 0; i < data.length; i++) {
-      console.log(data[i].code + '\t' + data[i].text);
+      output.write(data[i].code + '\t' + data[i].text);
     }
-    console.log('');
-    console.log("% items writted", data.length);
+    output.write('');
+    output.write(data.length + ' items writted');
   };
 }
 
-function JsonWriter() {
+function JsonWriter(output) {
+  if (!output && !output.write)
+    throw new Error('Must specify ouput');
+
   this.write = function(data, note, program) {
-    console.log('');
-    console.log("// Translation to %j for apps '%j', sections '%j'", program.language, program.application, program.section);
-    console.log("//", note);
-    console.log('');
-    console.log(data);
-    console.log('');
-    console.log("// %j items writted", data.length);
+    output.write('');
+    output.write('// Translation to ' + program.language + ' for apps ' + JSON.stringify(program.application) + ', sections ' + JSON.stringify(program.section));
+    output.write('// ' + note);
+    output.write('');
+    output.write(data);
+    output.write('');
+    output.write('// ' +data.length + ' items writted');
   };
 }
 
 var builder = require('xmlbuilder');
 
-function AndroidWriter() {
+function AndroidWriter(output) {
+  if (!output && !output.write)
+    throw new Error('Must specify ouput');
+
   this.write = function(data, note, program) {
     var root = builder.create('resources');
     root.comment('Last Update: ' + new Date().toLocaleString());
@@ -55,11 +84,14 @@ function AndroidWriter() {
       }, entry.text);
     }
 
-    console.log(root.end({ pretty: true}));
+    output.write(root.end({ pretty: true}));
   };
 }
 
 module.exports = {
+  ConsoleOutput: ConsoleOutput,
+  FileOutput: FileOutput,
+  CompositeOutput: CompositeOutput,
   text: TextWriter,
   json: JsonWriter,
   android: AndroidWriter
