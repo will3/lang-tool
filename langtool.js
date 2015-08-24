@@ -30,6 +30,7 @@ program
   .option('-t, --translated', 'Output translated items only')
   .option('-u, --untranslated', 'Output untranslated items only')
   .option('-p, --placeholders', 'Checks that the format placeholders are valid')
+  .option('-o, --output [file]', 'Write output to a file')
   .action(function(cmd){
     
     if (program.translated && program.untranslated) {
@@ -109,6 +110,20 @@ program
               }
             })
             .then(function(data) {
+              var failedItems = [];
+              if (program.placeholders) {
+                for (var i = 0; i < data.length; i++) {
+                  if (!verifyPlaceholders(data[i])) {
+                    failedItems.push(data[i]);
+                  }
+                };
+              }
+              if (failedItems.length > 0) {
+                throw new Error("some entries had problems in string format placeholders");
+              }
+              return data;
+            })
+            .then(function(data) {
               var note;
               if (program.untranslated) {
                 note = "Untranslated only";
@@ -137,6 +152,26 @@ function exitWithError(error) {
   program.outputHelp();
   console.error('Error: ' + error);
   process.exit(1);  
+}
+
+function verifyPlaceholders(entry) {
+  var placeholderRegex = /%()(s|f)/g;
+
+  //entry.defaultText = 'first %s second %s';
+
+  var matches = entry.defaultText.match(placeholderRegex);
+  if (matches) {
+    //console.log("entry %j has format", entry.code);
+    //console.log(entry, matches);
+    var translatedMatches = entry.text.match(placeholderRegex);
+    if (!translatedMatches)
+      return false;
+    // ensure the placeholders are the same in English and translation text
+    return translatedMatches.length == matches.length;
+  } {
+    // no format.
+    return true;
+  }
 }
 
 function missingTranslations(entries, translations) {
@@ -194,6 +229,7 @@ function mapEntry(entry, language) {
       section: entry.Section,
       code: entry.Code,
       text: entry.Text,
+      defaultText: entry.Text,
       notes: entry.Notes,
       context: entry.Context,
       language: language || 'en'

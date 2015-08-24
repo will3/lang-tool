@@ -19,7 +19,7 @@ module.exports = rest.service(function(apiToken) {
         url += '&app='+apps[i];
       }
     }
-    console.log('GET',url);
+    //console.log('GET',url);
     return this.get(url);
   },
   languages: function() {
@@ -45,7 +45,7 @@ module.exports = rest.service(function(apiToken) {
     if (version) {
       url += '&version='+version;
     }
-    console.log('GET',url);
+    //console.log('GET',url);
     return this.get(url);
   },
   translations: function(language,apps,sections,keys,version) {
@@ -68,7 +68,7 @@ module.exports = rest.service(function(apiToken) {
     if (version) {
       url += '&version='+version;
     }
-    console.log('GET',url);
+    //console.log('GET',url);
     return this.get(url);
   }
 });
