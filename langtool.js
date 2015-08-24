@@ -31,13 +31,18 @@ program
   .option('-u, --untranslated', 'Output untranslated items only')
   .option('-p, --placeholders', 'Checks that the format placeholders are valid')
   .option('-o, --output [file]', 'Write output to a file')
+  .option('-k, --token [token]', 'API authentication token', '')
   .action(function(cmd){
     
     if (program.translated && program.untranslated) {
       exitWithError('can only use one of translated or untranslated options at a time');
     }
 
-    langApi = new LangAPI('123');
+    if (!program.token) {
+      exitWithError('must specify API token');
+    }
+
+    langApi = new LangAPI(program.token);
 
     /*console.log('')
     console.log('program.application:',program.application);
@@ -136,6 +141,7 @@ program
               writer.write(data, note, program);
             })
             .catch(function(error) {
+              //throw new error;
               exitWithError(error);
             })
             .done();
@@ -150,7 +156,11 @@ program
 
 function exitWithError(error) {
   program.outputHelp();
-  console.error('Error: ' + error);
+  if (error.Message) {
+    console.error('Error:', error.Message);
+  } else {
+    console.error('Error:', error);
+  }
   process.exit(1);  
 }
 
@@ -247,8 +257,12 @@ function translationsPromise() {
 function promiseRequest(request) {
   var deferred = Q.defer();
 
-  request.on('complete', function(data) {
-    deferred.resolve(data);
+  request.on('complete', function(data, response) {
+    if (response.statusCode == 200) {
+      deferred.resolve(data);
+    } else {
+      deferred.reject(data);
+    }
   }).on('error', function(err) {
     deferred.reject(data);
   });
