@@ -1,0 +1,27 @@
+{
+  "name": "langtool-node",
+  "version": "1.0.0",
+  "description": "Wrapper around Vista Langauge API",
+  "main": "langtool.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://tfs:8080/tfs/Vista/Mobile%20Team/_git/langtool-node"
+  },
+  "keywords": [
+    "language",
+    "lang",
+    "langman",
+    "translation",
+    "locatisation"
+  ],
+  "author": "Mikhail Diatchenko",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^2.8.1",
+    "q": "^1.4.1",
+    "restler": "^3.3.0"
+  }
+}
