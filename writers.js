@@ -7,6 +7,7 @@ function ConsoleOutput() {
 function FileOutput(stream) {
   this.write = function(text) {
     stream.write(text);
+    stream.write('\n');
   }
 }
 
@@ -81,10 +82,45 @@ function AndroidWriter(output) {
         name: entry.code,
         comment: comment,
         section: entry.section
-      }, entry.text);
+      }, '"' + entry.text.replace('\'', '\\\'') + '"');
     }
 
     output.write(root.end({ pretty: true}));
+  };
+}
+
+function IOSWriter(output) {
+  if (!output && !output.write)
+    throw new Error('Must specify ouput');
+
+  function escape(s) {
+    return s.replace('"', '\\"');
+  }
+
+  this.write = function(data, note, program) {
+    output.write('/* Translation to ' + program.language + ' for apps ' + JSON.stringify(program.application) + ', sections ' + JSON.stringify(program.section) + ' */');
+    output.write('/* Last Update: ' + new Date().toLocaleString() + ' */');
+    output.write('/* By: langtool-node v' + program.version() + ' */');
+    output.write('/* Language: ' + (program.language || 'en') + ' */');
+    output.write('/* ' + note + ' */');
+    output.write('');
+    for (var i = 0; i < data.length; i++) {
+      var entry = data[i];
+
+      var comment = '';
+      if (entry.comment) {
+        comment = entry.comment;
+      }
+
+      if (entry.note) {
+        if (comment)
+          comment += '.  ';
+        comment = entry.note;
+      }
+      
+      output.write('/* Section: ' + entry.section + '. Comment: ' + comment + '*/');
+      output.write('"' + entry.code + '" = ' + JSON.stringify(escape(entry.text)));
+    }
   };
 }
 
@@ -94,5 +130,6 @@ module.exports = {
   CompositeOutput: CompositeOutput,
   text: TextWriter,
   json: JsonWriter,
-  android: AndroidWriter
+  android: AndroidWriter,
+  ios: IOSWriter
 }

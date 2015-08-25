@@ -95,6 +95,46 @@ program
           var output = new writers.ConsoleOutput();
           var stream;
 
+          if (program.output === true) {
+            var name = '';
+
+            for (var i = 0; i < program.application.length; i++) {
+              name += '+' + program.application[i];
+            };
+
+            for (var i = 0; i < program.section.length; i++) {
+              name += '+' + program.section[i];
+            };
+
+            if (name.length === 0) {
+              name = 'Translations';
+            } else {
+              name = name.substring(1);
+            }
+
+            // construct output name
+            switch (program.format) {
+              case 'text':              
+                program.output = name + '-' + (program.language || 'en') + '.txt';
+                break;
+
+              case 'json':
+                program.output = name + '-' + (program.language || 'en') + '.json';
+                break;
+
+              case 'android':
+                program.output = name + '-' + (program.language || 'en') + '.xml';
+                break;
+
+              case 'ios':
+                program.output = name + '-' + (program.language || 'en') + '.strings';
+                break;
+
+              default:
+                exitWithError("unsupported output format " + program.format);
+            }
+          }
+
           if (program.output) {
             stream = fs.createWriteStream(program.output);
             output = new writers.FileOutput(stream);
@@ -103,7 +143,7 @@ program
           var writer;
 
           if (!writers[program.format]) {
-            exitWithError("unsupported translation format " + program.format);
+            exitWithError("unsupported output format " + program.format);
           } else {
             writer = new writers[program.format](output);
           }
