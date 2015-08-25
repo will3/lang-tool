@@ -25,7 +25,7 @@ module.exports = rest.service(function(apiToken) {
   languages: function() {
     return this.get('languages');
   },
-  entries: function(apps,sections,keys,version) {
+  entries: function(apps,sections,keys,version,defaultContains) {
   	var url = 'entries?take=1000';
   	if (apps) {
   		for (var i = 0; i < apps.length; i++) {
@@ -45,10 +45,13 @@ module.exports = rest.service(function(apiToken) {
     if (version) {
       url += '&version='+version;
     }
+    if (defaultContains) {
+      url += '&defaultContains='+defaultContains;
+    }
     //console.log('GET',url);
     return this.get(url);
   },
-  translations: function(language,apps,sections,keys,version) {
+  translations: function(language,apps,sections,keys,version,defaultContains,translationContains) {
     var url = 'translations/'+language+'/?take=1000';
     if (apps) {
       for (var i = 0; i < apps.length; i++) {
@@ -67,6 +70,12 @@ module.exports = rest.service(function(apiToken) {
     }
     if (version) {
       url += '&version='+version;
+    }
+    if (defaultContains) {
+      url += '&defaultContains='+defaultContains;
+    }
+    if (translationContains) {
+      url += '&translationContains='+translationContains;
     }
     //console.log('GET',url);
     return this.get(url);

@@ -32,7 +32,7 @@ function TextWriter(output) {
       output.write(data[i].code + '\t' + data[i].text);
     }
     output.write('');
-    output.write(data.length + ' items writted');
+    output.write(data.length + ' items written');
   };
 }
 
@@ -47,7 +47,7 @@ function JsonWriter(output) {
     output.write('');
     output.write(data);
     output.write('');
-    output.write('// ' +data.length + ' items writted');
+    output.write('// ' +data.length + ' items written');
   };
 }
 
@@ -117,7 +117,7 @@ function IOSWriter(output) {
           comment += '.  ';
         comment = entry.note;
       }
-      
+
       output.write('/* Section: ' + entry.section + '. Comment: ' + comment + '*/');
       output.write('"' + entry.code + '" = ' + JSON.stringify(escape(entry.text)));
     }

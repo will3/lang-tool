@@ -20,23 +20,28 @@ function collect(val, memo) {
   return memo;
 }
 
+var currentCommand;
+
 program
   .version('1.0.0')
   .command('apps', 'Gets application(s)')
   .command('sections [options]', 'Gets section(s)')
   .command('languages', 'Gets languages')
-  .option('-a, --application [code]', 'Filters by application code', collect, [])
-  .option('-s, --section [code]', 'Filters by section code', collect, [])
-  .option('-v, --ver [version]', 'Version number to get entries for', /^(\d+\.\d+(\.\d+)?(\.\d+)?(\.\d+)?)$/, '')
-  .option('-l, --language [code]', 'Language code to get translations for', /^([a-z]{2}(\-[a-z]{2})?)$/i, 'en')
-  .option('-f, --format [fmt]', 'Format to output translations', /^(text|json|android|ios)$/i, 'text')
+  .command('translations [options]', 'Gets translations')
+  .option('-a, --application [code]', 'Filters sections or translations by application code.', collect, [])
+  .option('-s, --section [code]', 'Filters translation by section code', collect, [])
+  .option('-v, --ver [version]', 'Version number to get translations for', /^(\d+\.\d+(\.\d+)?(\.\d+)?(\.\d+)?)$/, '')
+  .option('-l, --language [code]', 'Language code to get translations for. Default \'en\'', /^([a-z]{2}(\-[a-z]{2})?)$/i, 'en')
+  .option('-f, --format [fmt]', 'Format to output translations in. Supported formats are: text, json, android, ios. Default \'text\'', /^(text|json|android|ios)$/i, 'text')
   .option('-t, --translated', 'Output translated items only')
   .option('-u, --untranslated', 'Output untranslated items only')
-  .option('-p, --placeholders', 'Checks that the format placeholders are valid')
-  .option('-o, --output [file]', 'Write output to a file')
+  .option('-p, --placeholders', 'Checks that the format placeholders are valid in translations')
+  .option('-o, --output [file]', 'Ouput translations to a file instead of console')
+  .option('-d, --searchDefault [text]', 'Searches translations by default English text containing text')
+  .option('-x, --searchTranslated [text]', 'Searches translations by translated text containing text')
   .option('-k, --token [token]', 'API authentication token', '')
   .action(function(cmd){
-    
+
     if (program.translated && program.untranslated) {
       exitWithError('can only use one of translated or untranslated options at a time');
     }
@@ -46,15 +51,9 @@ program
     }
 
     langApi = new LangAPI(program.token);
-
-    /*console.log('')
-    console.log('program.application:',program.application);
-    console.log('program.section:',program.section);
-    console.log('program.ver',program.ver);
-    console.log('program.format',program.format);
-    console.log('')*/
   })
   .action(function(cmd){
+    currentCommand = cmd;
     switch(cmd) {
       case "applications":
       case "apps":
@@ -97,47 +96,9 @@ program
           var output = new writers.ConsoleOutput();
           var stream;
 
-          if (program.output === true) {
-            var name = '';
-
-            for (var i = 0; i < program.application.length; i++) {
-              name += '+' + program.application[i];
-            };
-
-            for (var i = 0; i < program.section.length; i++) {
-              name += '+' + program.section[i];
-            };
-
-            if (name.length === 0) {
-              name = 'Translations';
-            } else {
-              name = name.substring(1);
-            }
-
-            // construct output name
-            switch (program.format) {
-              case 'text':              
-                program.output = name + '-' + (program.language || 'en') + '.txt';
-                break;
-
-              case 'json':
-                program.output = name + '-' + (program.language || 'en') + '.json';
-                break;
-
-              case 'android':
-                program.output = name + '-' + (program.language || 'en') + '.xml';
-                break;
-
-              case 'ios':
-                program.output = name + '-' + (program.language || 'en') + '.strings';
-                break;
-
-              default:
-                exitWithError("unsupported output format " + program.format);
-            }
-          }
-
           if (program.output) {
+            setDefaultTranslationOutputName();
+
             stream = fs.createWriteStream(program.output);
             output = new writers.FileOutput(stream);
           }
@@ -161,20 +122,7 @@ program
                 return mergeTranslations(entries, translations);
               }
             })
-            .then(function(data) {
-              var failedItems = [];
-              if (program.placeholders) {
-                for (var i = 0; i < data.length; i++) {
-                  if (!verifyPlaceholders(data[i])) {
-                    failedItems.push(data[i]);
-                  }
-                };
-              }
-              if (failedItems.length > 0) {
-                throw new Error("some entries had problems in string format placeholders");
-              }
-              return data;
-            })
+            .then(verifyPlaceholdersInTranslation)
             .then(function(data) {
               var note;
               if (program.untranslated) {
@@ -182,7 +130,7 @@ program
               } else if (program.translated) {
                 note = "Translated only";
               } else {
-                note = "Translation and Egnlish defaults";
+                note = "Translation and English defaults";
               }
 
               writer.write(data, note, program);
@@ -197,8 +145,13 @@ program
               }
 
               exitWithError(error);
-            });
+            })
+            .done();
         }
+        break;
+
+      case 'help':
+        program.outputHelp();
         break;
 
       default:
@@ -206,6 +159,52 @@ program
     }
   })
   .parse(process.argv);
+
+if (!currentCommand) {
+  exitWithError('no command specified');
+}
+
+function setDefaultTranslationOutputName() {
+  if (program.output === true) {
+    var name = '';
+
+    for (var i = 0; i < program.application.length; i++) {
+      name += '+' + program.application[i];
+    };
+
+    for (var i = 0; i < program.section.length; i++) {
+      name += '+' + program.section[i];
+    };
+
+    if (name.length === 0) {
+      name = 'Translations';
+    } else {
+      name = name.substring(1);
+    }
+
+    // construct output name
+    switch (program.format) {
+      case 'text':              
+        program.output = name + '-' + (program.language || 'en') + '.txt';
+        break;
+
+      case 'json':
+        program.output = name + '-' + (program.language || 'en') + '.json';
+        break;
+
+      case 'android':
+        program.output = name + '-' + (program.language || 'en') + '.xml';
+        break;
+
+      case 'ios':
+        program.output = name + '-' + (program.language || 'en') + '.strings';
+        break;
+
+      default:
+        exitWithError("unsupported output format " + program.format);
+    }
+  }
+}
 
 function exitWithError(error) {
   program.outputHelp();
@@ -215,6 +214,21 @@ function exitWithError(error) {
     console.error('Error:', error);
   }
   process.exit(1);  
+}
+
+function verifyPlaceholdersInTranslation(data) {
+  var failedItems = [];
+  if (program.placeholders) {
+    for (var i = 0; i < data.length; i++) {
+      if (!verifyPlaceholders(data[i])) {
+        failedItems.push(data[i]);
+      }
+    };
+  }
+  if (failedItems.length > 0) {
+    throw new Error("some entries had problems in string format placeholders");
+  }
+  return data;
 }
 
 function verifyPlaceholders(entry) {
@@ -300,11 +314,11 @@ function mapEntry(entry, language) {
 }
 
 function entriesPromise() {
-  return promiseRequest(langApi.entries(program.application, program.section, null, program.ver));
+  return promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault));
 }
 
 function translationsPromise() {
-  return promiseRequest(langApi.translations(program.language, program.application, program.section, null, program.ver));
+  return promiseRequest(langApi.translations(program.language, program.application, program.section, null, program.ver, program.searchDefault, program.searchTranslated));
 }
 
 function promiseRequest(request) {
