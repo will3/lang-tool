@@ -1,8 +1,11 @@
 {
   "name": "langtool-node",
   "version": "1.0.0",
-  "description": "Wrapper around Vista Langauge API",
-  "main": "langtool.js",
+  "description": "Wrapper around Vista Langauge API with extra goodness",
+  "preferGlobal": true,
+  "bin": {
+    "langtool": "langtool.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
