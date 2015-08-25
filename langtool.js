@@ -35,7 +35,7 @@ program
   .option('-f, --format [fmt]', 'Format to output translations in. Supported formats are: text, json, android, ios. Default \'text\'', /^(text|json|android|ios)$/i, 'text')
   .option('-t, --translated', 'Output translated items only')
   .option('-u, --untranslated', 'Output untranslated items only')
-  .option('-p, --placeholders', 'Checks that the format placeholders are valid in translations')
+  .option('-p, --placeholders', 'Checks that the format placeholders are valid in translations', true)
   .option('-o, --output [file]', 'Ouput translations to a file instead of console')
   .option('-d, --searchDefault [text]', 'Searches translations by default English text containing text')
   .option('-x, --searchTranslated [text]', 'Searches translations by translated text containing text')
@@ -232,7 +232,9 @@ function verifyPlaceholdersInTranslation(data) {
 }
 
 function verifyPlaceholders(entry) {
-  var placeholderRegex = /%()(s|f)/g;
+  // refer to https://docs.oracle.com/javase/tutorial/essential/io/formatting.html
+  // https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
+  var placeholderRegex = /%(\d+$)?(\d+)?(\.\d+)?(d|f|n|x|s|@|D|u|U|X|o|O|e|E|g|G|c|C|S|a|A|F)/g;
 
   //entry.defaultText = 'first %s second %s';
 
