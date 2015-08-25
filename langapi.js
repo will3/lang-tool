@@ -16,7 +16,7 @@ module.exports = rest.service(function(apiToken) {
     var url = 'sections?take=1000';
     if (apps) {
       for (var i = 0; i < apps.length; i++) {
-        url += '&app='+apps[i];
+        url += '&app='+encodeURIComponent(apps[i]);
       }
     }
     //console.log('GET',url);
@@ -29,55 +29,55 @@ module.exports = rest.service(function(apiToken) {
   	var url = 'entries?take=1000';
   	if (apps) {
   		for (var i = 0; i < apps.length; i++) {
-  		  url += '&app='+apps[i];
+  		  url += '&app='+encodeURIComponent(apps[i]);
   		}
   	}
     if (sections) {
       for (var i = 0; i < sections.length; i++) {
-        url += '&section='+sections[i];
+        url += '&section='+encodeURIComponent(sections[i]);
       }
     }
     if (keys) {
       for (var i = 0; i < keys.length; i++) {
-        url += '&key='+keys[i];
+        url += '&key='+encodeURIComponent(keys[i]);
       }
     }
     if (version) {
       url += '&version='+version;
     }
     if (defaultContains) {
-      url += '&defaultContains='+defaultContains;
+      url += '&defaultContains='+encodeURIComponent(defaultContains);
     }
-    //console.log('GET',url);
+    //console.log('langapi>', 'GET',url);
     return this.get(url);
   },
   translations: function(language,apps,sections,keys,version,defaultContains,translationContains) {
     var url = 'translations/'+language+'/?take=1000';
     if (apps) {
       for (var i = 0; i < apps.length; i++) {
-        url += '&app='+apps[i];
+        url += '&app='+encodeURIComponent(apps[i]);
       }
     }
     if (sections) {
       for (var i = 0; i < sections.length; i++) {
-        url += '&section='+sections[i];
+        url += '&section='+encodeURIComponent(sections[i]);
       }
     }
     if (keys) {
       for (var i = 0; i < keys.length; i++) {
-        url += '&key='+keys[i];
+        url += '&key='+encodeURIComponent(keys[i]);
       }
     }
     if (version) {
-      url += '&version='+version;
+      url += '&version='+encodeURIComponent(version);
     }
     if (defaultContains) {
-      url += '&defaultContains='+defaultContains;
+      url += '&defaultContains='+encodeURIComponent(defaultContains);
     }
     if (translationContains) {
-      url += '&translationContains='+translationContains;
+      url += '&translationContains='+encodeURIComponent(translationContains);
     }
-    //console.log('GET',url);
+    //console.log('langapi>', 'GET',url);
     return this.get(url);
   }
 });

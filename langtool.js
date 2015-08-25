@@ -24,10 +24,10 @@ var currentCommand;
 
 program
   .version('1.0.0')
-  .command('apps', 'Gets application(s)')
-  .command('sections [options]', 'Gets section(s)')
-  .command('languages', 'Gets languages')
-  .command('translations [options]', 'Gets translations')
+  //.command('apps', 'Gets application(s)')
+  //.command('sections [options]', 'Gets section(s)')
+  //.command('languages', 'Gets languages')
+  //.command('translations [options]', 'Gets translations')
   .option('-a, --application [code]', 'Filters sections or translations by application code.', collect, [])
   .option('-s, --section [code]', 'Filters translation by section code', collect, [])
   .option('-v, --ver [version]', 'Version number to get translations for', /^(\d+\.\d+(\.\d+)?(\.\d+)?(\.\d+)?)$/, '')
@@ -35,7 +35,7 @@ program
   .option('-f, --format [fmt]', 'Format to output translations in. Supported formats are: text, json, android, ios. Default \'text\'', /^(text|json|android|ios)$/i, 'text')
   .option('-t, --translated', 'Output translated items only')
   .option('-u, --untranslated', 'Output untranslated items only')
-  .option('-p, --placeholders', 'Checks that the format placeholders are valid in translations', true)
+  .option('-p, --placeholders', 'Filters translations to only include strings with format placeholders.', false)
   .option('-o, --output [file]', 'Ouput translations to a file instead of console')
   .option('-d, --searchDefault [text]', 'Searches translations by default English text containing text')
   .option('-x, --searchTranslated [text]', 'Searches translations by translated text containing text')
@@ -54,41 +54,62 @@ program
   })
   .action(function(cmd){
     currentCommand = cmd;
-    switch(cmd) {
-      case "applications":
-      case "apps":
-        langApi.applications().on('complete', function(data) {
+  })
+  .parse(process.argv);
+
+//console.log('command:', currentCommand);
+
+if (!currentCommand) {
+  exitWithError('no command specified');
+} else {
+  switch(currentCommand) {
+    case "applications":
+    case "apps":
+      langApi.applications().on('complete', function(data) {
+        console.log(data);
+      });
+      break;
+
+    case "sections":
+      if (program.application.length === 0) {
+        exitWithError('must specify application filter');
+      } else {
+        langApi.sections(program.application).on('complete', function(data) {
           console.log(data);
         });
-        break;
+      }
+      break;
 
-      case "sections":
-        if (program.application.length === 0) {
-          exitWithError('must specify application filter');
-        } else {
-          langApi.sections(program.application).on('complete', function(data) {
-            console.log(data);
-          });
-        }
-        break;
+    case "languages":
+      langApi.languages().on('complete', function(data) {
+        console.log(data);
+      });
+      break;
 
-      case "languages":
-        langApi.languages().on('complete', function(data) {
-          console.log(data);
+    /*case "entries":
+      if (program.application.length === 0 && program.section.length === 0) {
+        exitWithError('must specify application filter or section filter');
+      } else {
+        langApi.entries(program.application, program.section, null, program.ver).on('complete', function(data) {
+          console.log('got %j entries', data.length);
         });
-        break;
+      }
+      break;*/
 
-      case "entries":
-        if (program.application.length === 0 && program.section.length === 0) {
-          exitWithError('must specify application filter or section filter');
-        } else {
-          langApi.entries(program.application, program.section, null, program.ver).on('complete', function(data) {
-            console.log('got %j entries', data.length);
-          });
-        }
-        break;
+    case "translations":
+      translationsCommand();
+      break;
 
-      case "translations":
+    case 'help':
+      program.outputHelp();
+      break;
+
+    default:
+      exitWithError("unknown command " + cmd);
+  }
+}
+
+function translationsCommand() {
         if (program.application.length === 0 && program.section.length === 0) {
           exitWithError('must specify application filter or section filter');
         } else {
@@ -111,6 +132,8 @@ program
             writer = new writers[program.format](output);
           }
 
+          //console.log('getting data from API');
+
           Q.all([entriesPromise(), translationsPromise()])
             .spread(function(entries, translations) {
               //console.log("got it! %j entries, %j translations", entries.length, translations.length);
@@ -123,6 +146,13 @@ program
               }
             })
             .then(verifyPlaceholdersInTranslation)
+            .then(function(data) {
+              if (program.placeholders) {
+                return getPlaceholdersOnly(data);
+              } else {
+                return data;
+              }
+            })
             .then(function(data) {
               var note;
               if (program.untranslated) {
@@ -148,20 +178,6 @@ program
             })
             .done();
         }
-        break;
-
-      case 'help':
-        program.outputHelp();
-        break;
-
-      default:
-        exitWithError("unknown command " + cmd);
-    }
-  })
-  .parse(process.argv);
-
-if (!currentCommand) {
-  exitWithError('no command specified');
 }
 
 function setDefaultTranslationOutputName() {
@@ -217,39 +233,49 @@ function exitWithError(error) {
 }
 
 function verifyPlaceholdersInTranslation(data) {
-  var failedItems = [];
-  if (program.placeholders) {
-    for (var i = 0; i < data.length; i++) {
-      if (!verifyPlaceholders(data[i])) {
-        failedItems.push(data[i]);
-      }
-    };
-  }
-  if (failedItems.length > 0) {
-    throw new Error("some entries had problems in string format placeholders");
-  }
+  for (var i = 0; i < data.length; i++) {
+    if (!getPlaceholders(data[i]).ok) {
+      throw new Error("some entries had problems in string format placeholders");
+    }
+  };
   return data;
 }
 
-function verifyPlaceholders(entry) {
+function getPlaceholdersOnly(data) {
+  var result = [];
+  for (var i = 0; i < data.length; i++) {
+    if (getPlaceholders(data[i]).placeholders) {
+      result.push(data[i]);
+    }
+  };
+  return result;
+}
+
+function getPlaceholders(entry) {
   // refer to https://docs.oracle.com/javase/tutorial/essential/io/formatting.html
   // https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
   var placeholderRegex = /%(\d+$)?(\d+)?(\.\d+)?(d|f|n|x|s|@|D|u|U|X|o|O|e|E|g|G|c|C|S|a|A|F)/g;
 
-  //entry.defaultText = 'first %s second %s';
+  var result = {
+    placeholders: null,
+    matches: null,
+    ok: true
+  };
 
-  var matches = entry.defaultText.match(placeholderRegex);
-  if (matches) {
-    //console.log("entry %j has format", entry.code);
-    //console.log(entry, matches);
-    var translatedMatches = entry.text.match(placeholderRegex);
-    if (!translatedMatches)
-      return false;
+  result.placeholders = entry.defaultText.match(placeholderRegex);
+  if (result.placeholders) {
+    result.matches = entry.text.match(placeholderRegex);
+    if (!result.matches) {
+      result.ok = false;
+      return result;
+    }
+    
     // ensure the placeholders are the same in English and translation text
-    return translatedMatches.length == matches.length;
-  } {
+    result.ok = result.matches.length == result.placeholders.length;
+    return result;
+  } else {
     // no format.
-    return true;
+    return result;
   }
 }
 
@@ -324,17 +350,21 @@ function translationsPromise() {
 }
 
 function promiseRequest(request) {
+  //console.log('promiseRequest', request.url.href);
   var deferred = Q.defer();
 
   request.on('complete', function(data, response) {
+    //console.log(' request complete', request.url.path);
     if (response.statusCode == 200) {
       deferred.resolve(data);
     } else {
       deferred.reject(data);
     }
   }).on('error', function(err) {
-    deferred.reject(data);
+    //console.error(' error');
+    deferred.reject(err);
   });
 
   return deferred.promise;
 }
+
