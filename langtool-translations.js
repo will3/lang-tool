@@ -172,7 +172,7 @@ function verifyPlaceholdersInTranslation(data) {
 function getPlaceholders(entry) {
   // refer to https://docs.oracle.com/javase/tutorial/essential/io/formatting.html
   // https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
-  var placeholderRegex = /%(\d+$)?(\d+)?(\.\d+)?(d|f|n|x|s|@|D|u|U|X|o|O|e|E|g|G|c|C|S|a|A|F)/g;
+  var placeholderRegex = /%(\d+\$)?(\d+)?(\.\d+)?(d|f|n|x|s|@|D|u|U|X|o|O|e|E|g|G|c|C|S|a|A|F)/g;
 
   var result = {
     placeholders: null,
