@@ -10,7 +10,7 @@ var LangAPI = require('./lib/langapi');
 program
   .version('1.0.0')
   .usage('[culture] [options]')
-  .description('(if culture is not specified will default to \'en\')')
+  .description('(e.g. \'ru-ru\' run langtool languages to see available. if culture is not specified will default to \'en\')')
   .option('-a, --application [code]', 'Filters sections or translations by application code.', common.collect, [])
   .option('-s, --section [code]', 'Filters translation by section code', common.collect, [])
   .option('-v, --ver [version]', 'Version number to get translations for', /^(\d+\.\d+(\.\d+)?(\.\d+)?(\.\d+)?)$/, '')
@@ -85,7 +85,9 @@ var output = new writers.ConsoleOutput();
     .then(verifyPlaceholdersInTranslation)
     .then(function(data) {
       if (program.placeholders) {
-        return getPlaceholdersOnly(data);
+        return data.filter(function(entry) {
+          return getPlaceholders(entry).placeholders;
+        });
       } else {
         return data;
       }
@@ -167,16 +169,6 @@ function verifyPlaceholdersInTranslation(data) {
   return data;
 }
 
-function getPlaceholdersOnly(data) {
-  var result = [];
-  for (var i = 0; i < data.length; i++) {
-    if (getPlaceholders(data[i]).placeholders) {
-      result.push(data[i]);
-    }
-  };
-  return result;
-}
-
 function getPlaceholders(entry) {
   // refer to https://docs.oracle.com/javase/tutorial/essential/io/formatting.html
   // https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html
@@ -205,13 +197,17 @@ function getPlaceholders(entry) {
   }
 }
 
-function missingTranslations(entries, translations) {
+function getTranslationsMap(translations) {
   var translationMap = {};
   for (var i = 0; i < translations.length; i++) {
     translationMap[translations[i].EntryId] = translations[i];
   };
 
-  var result = [];
+  return translationMap;
+}
+
+function missingTranslations(entries, translations) {
+  var translationMap = getTranslationsMap(translations);
 
   return entries.filter(function(entry) {
     return !(translationMap[entry.Id] || false);
@@ -221,41 +217,25 @@ function missingTranslations(entries, translations) {
 }
 
 function translationsOnly(entries, translations) {
-  var translationMap = {};
-  for (var i = 0; i < translations.length; i++) {
-    translationMap[translations[i].EntryId] = translations[i];
-  };
-
-  var result = [];
+  var translationMap = getTranslationsMap(translations);
 
   return entries.filter(function(entry) {
     return (translationMap[entry.Id] || false);
   }).map(function(entry) {
-    var result = mapEntry(entry);
-    result.text = translationMap[entry.Id].Text;
-    result.language = translationMap[entry.Id].Language;
-    return result;
+    return mapEntry(entry, translationMap[entry.Id]);
   });
 }
 
 function mergeTranslations(entries, translations) {
-  var translationMap = {};
-  for (var i = 0; i < translations.length; i++) {
-    translationMap[translations[i].EntryId] = translations[i];
-  };
-  return entries.map(function(entry) {
-    var result = mapEntry(entry);
+  var translationMap = getTranslationsMap(translations);
 
-    if (translationMap[entry.Id]) {
-      result.text = translationMap[entry.Id].Text;
-      result.language = translationMap[entry.Id].Language;
-    }
-    return result;
+  return entries.map(function(entry) {
+    return mapEntry(entry, translationMap[entry.Id]);
   });
 }
 
-function mapEntry(entry, language) {
-  return {
+function mapEntry(entry, translation) {
+  var result = {
       id: entry.Id,
       section: entry.Section,
       code: entry.Code,
@@ -263,8 +243,13 @@ function mapEntry(entry, language) {
       defaultText: entry.Text,
       notes: entry.Notes,
       context: entry.Context,
-      language: language || 'en'
+      language: 'en'
     };
+    if (translation) {
+      result.text = translation.Text;
+      result.language = translation.Language;
+    }
+    return result;
 }
 
 function entriesPromise() {
