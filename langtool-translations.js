@@ -4,7 +4,7 @@ var program = require('commander');
 var Q = require('q');
 var fs = require('fs');
 var common = require('./lib/common');
-var writers = require('./lib/writers');
+var formats = require('./lib/formats');
 var LangAPI = require('./lib/langapi');
 
 program
@@ -19,9 +19,10 @@ program
   .option('-t, --translated', 'Output translated items only')
   .option('-u, --untranslated', 'Output untranslated items only')
   .option('-p, --placeholders', 'Filters translations to only include strings with format placeholders.', false)
-  .option('-o, --output [path]', 'Ouput translations to a file instead of console. If path is omitted, will generate file a name based on application, format and language.')
+  .option('-o, --output [path]', 'Ouput translations to a file instead of console. If path is omitted, will generate file a name based on application, format and language. Add -h to not ovewrite file when translation has not changed')
   .option('-d, --searchDefault [text]', 'Searches translations by default English text containing text')
   .option('-x, --searchTranslated [text]', 'Searches translations by translated text containing text')
+  .option('-h, --hash', 'When -o is used this will check exiting file and only overwrite when translations changed')
   .option('-k, --token [token]', 'API authentication token', '')
   .parse(process.argv);
 
@@ -53,22 +54,14 @@ program.format = program.format.toLowerCase();
 
 var langApi = new LangAPI(program.token);
 
-var output = new writers.ConsoleOutput();
+var output = new formats.ConsoleOutput();
   var stream;
 
-  if (program.output) {
-    setDefaultTranslationOutputName();
-
-    stream = fs.createWriteStream(program.output);
-    output = new writers.FileOutput(stream);
-  }
-
   var writer;
+  var format = formats[program.format];
 
-  if (!writers[program.format]) {
+  if (!format) {
     common.exitWithError("unsupported output format " + program.format);
-  } else {
-    writer = new writers[program.format](output);
   }
 
   //console.log('getting data from API');
@@ -103,6 +96,26 @@ var output = new writers.ConsoleOutput();
       } else {
         note = "Translation and English defaults";
       }
+
+	  if (program.output) {
+	    setDefaultTranslationOutputName();
+
+	    if (program.hash && fs.existsSync(program.output)) {
+	    	// outpu exists. check if text has changed
+		    var fileContent = fs.readFileSync(program.output, "utf8");
+			var hash = format.extractHash(fileContent);
+
+			if (formats.hashTranslations(data) == hash) {
+				console.log('Will not output, since strings have not changed in', program.output, '(hash: '+hash+')');
+		    	process.exit(0);  
+		    }
+		}
+
+	    stream = fs.createWriteStream(program.output);
+	    output = new formats.FileOutput(stream);	    
+	  }
+
+	  writer = new format.writer(output);
 
       writer.write(data, note, program);
 
