@@ -35,6 +35,8 @@ if (languages.length > 0) {
 	language = languages[0];
 }
 
+program.language = language;
+
 if (!/^([a-z]{2}(\-[a-z]{2})?)$/i.test(language)) {
 	common.exitWithError(language + ' is not a valid culture code');
 }
