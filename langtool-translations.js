@@ -38,7 +38,7 @@ if (languages.length > 0) {
 
 program.language = language;
 
-if (!/^([a-z]{2}(\-[a-z]{2})?)$/i.test(language)) {
+if (!/^([a-z]{2}(\-[a-z0-9]{2,3})?)$/i.test(language)) {
 	common.exitWithError(language + ' is not a valid culture code');
 }
 
@@ -69,6 +69,12 @@ var output = new formats.ConsoleOutput();
   Q.all([entriesPromise(), translationsPromise()])
     .spread(function(entries, translations) {
       //console.log("got it! %j entries, %j translations", entries.length, translations.length);
+
+      // remove any translation entries with null text
+      translations = translations.filter(function(entry) {
+      	return entry.Text !== null;
+      });
+
       if (program.untranslated) {
         return missingTranslations(entries, translations);
       } else if (program.translated) {
@@ -77,13 +83,21 @@ var output = new formats.ConsoleOutput();
         return mergeTranslations(entries, translations);
       }
     })
-    .then(verifyPlaceholdersInTranslation)
     .then(function(data) {
       if (program.placeholders) {
         return data.filter(function(entry) {
           return getPlaceholders(entry).placeholders;
         });
       } else {
+		var failed = data.filter(function(entry) {
+	  		return !getPlaceholders(entry).ok;
+	  	});
+	  	if (failed.length > 0) {
+	  		console.log('these entries had problems in string format placeholders');
+	  		console.log(failed);
+      		throw new Error('some entries had problems in string format placeholders');
+      	}
+
         return data;
       }
     })
@@ -128,7 +142,8 @@ var output = new formats.ConsoleOutput();
         stream.end();
       }
 
-      common.exitWithError(error);
+      throw error;
+      //common.exitWithError(error);
     })
     .done();
 
@@ -173,15 +188,6 @@ function setDefaultTranslationOutputName() {
         common.exitWithError("unsupported output format " + program.format);
     }
   }
-}
-
-function verifyPlaceholdersInTranslation(data) {
-  for (var i = 0; i < data.length; i++) {
-    if (!getPlaceholders(data[i]).ok) {
-      throw new Error("some entries had problems in string format placeholders");
-    }
-  };
-  return data;
 }
 
 function getPlaceholders(entry) {
