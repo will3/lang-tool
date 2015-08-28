@@ -66,14 +66,11 @@ var output = new formats.ConsoleOutput();
 
   //console.log('getting data from API');
 
-  Q.all([entriesPromise(), translationsPromise()])
-    .spread(function(entries, translations) {
+  Q.all([entriesPromise(), translationsPromise(), languagesPromise()])
+    .spread(function(entries, translations, languageMap) {
       //console.log("got it! %j entries, %j translations", entries.length, translations.length);
 
-      // remove any translation entries with null text
-      translations = translations.filter(function(entry) {
-      	return entry.Text !== null;
-      });
+      program.languageDetail = languageMap[language];
 
       if (program.untranslated) {
         return missingTranslations(entries, translations);
@@ -95,7 +92,7 @@ var output = new formats.ConsoleOutput();
 	  	if (failed.length > 0) {
 	  		console.log('these entries had problems in string format placeholders');
 	  		console.log(failed);
-      		throw new Error('some entries had problems in string format placeholders');
+      		common.exitWithError('some entries had problems in string format placeholders');
       	}
 
         return data;
@@ -107,6 +104,8 @@ var output = new formats.ConsoleOutput();
         note = "Untranslated only";
       } else if (program.translated) {
         note = "Translated only";
+      } else if (language == 'en') {
+        note = "";
       } else {
         note = "Translation and English defaults";
       }
@@ -259,7 +258,7 @@ function mapEntry(entry, translation) {
   var result = {
       id: entry.Id,
       section: entry.Section,
-      code: entry.Code,
+      code: entry.Code.replace(' ' , ''),
       text: entry.Text,
       defaultText: entry.Text,
       notes: entry.Notes,
@@ -273,10 +272,37 @@ function mapEntry(entry, translation) {
     return result;
 }
 
+function languagesPromise() {
+	return common.promiseRequest(langApi.languages())
+  	.then(function(data) {
+  		var map = {}
+  		for (var i = 0; i < data.length; i++) {
+        map[data[i].CultureCode] = data[i];
+  		};
+      return map;
+  	});
+}
+
 function entriesPromise() {
-  return common.promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault));
+	return common.promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault))
+  	.then(function(data) {
+      	return data.sort(function(a, b) {
+      		var result = a.Code.localeCompare(b.Code);
+      		if (result === 0) {
+      			return a.Section.localeCompare(b.Section);
+      		} else {
+      			return result;
+      		}
+      	});
+  	});
 }
 
 function translationsPromise() {
-  return common.promiseRequest(langApi.translations(language, program.application, program.section, null, program.ver, program.searchDefault, program.searchTranslated));
+  return common.promiseRequest(langApi.translations(language, program.application, program.section, null, program.ver, program.searchDefault, program.searchTranslated))
+  	.then(function(data) {
+  		// remove any translation entries with null text
+      	return data.filter(function(entry) {
+      		return entry.Text !== null;
+      	});
+  	});
 }
