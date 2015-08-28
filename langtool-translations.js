@@ -258,7 +258,7 @@ function mapEntry(entry, translation) {
   var result = {
       id: entry.Id,
       section: entry.Section,
-      code: entry.Code,
+      code: entry.Code.replace(' ' , ''),
       text: entry.Text,
       defaultText: entry.Text,
       notes: entry.Notes,
