@@ -95,7 +95,7 @@ var output = new formats.ConsoleOutput();
 	  	if (failed.length > 0) {
 	  		console.log('these entries had problems in string format placeholders');
 	  		console.log(failed);
-      		throw new Error('some entries had problems in string format placeholders');
+      		common.exitWithError('some entries had problems in string format placeholders');
       	}
 
         return data;
