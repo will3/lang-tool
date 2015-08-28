@@ -70,11 +70,6 @@ var output = new formats.ConsoleOutput();
     .spread(function(entries, translations) {
       //console.log("got it! %j entries, %j translations", entries.length, translations.length);
 
-      // remove any translation entries with null text
-      translations = translations.filter(function(entry) {
-      	return entry.Text !== null;
-      });
-
       if (program.untranslated) {
         return missingTranslations(entries, translations);
       } else if (program.translated) {
@@ -274,9 +269,25 @@ function mapEntry(entry, translation) {
 }
 
 function entriesPromise() {
-  return common.promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault));
+	return common.promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault))
+  	.then(function(data) {
+      	return data.sort(function(a, b) {
+      		var result = a.Code.localeCompare(b.Code);
+      		if (result === 0) {
+      			return a.Section.localeCompare(b.Section);
+      		} else {
+      			return result;
+      		}
+      	});
+  	});
 }
 
 function translationsPromise() {
-  return common.promiseRequest(langApi.translations(language, program.application, program.section, null, program.ver, program.searchDefault, program.searchTranslated));
+  return common.promiseRequest(langApi.translations(language, program.application, program.section, null, program.ver, program.searchDefault, program.searchTranslated))
+  	.then(function(data) {
+  		// remove any translation entries with null text
+      	return data.filter(function(entry) {
+      		return entry.Text !== null;
+      	});
+  	});
 }
