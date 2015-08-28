@@ -8,7 +8,7 @@ var formats = require('./lib/formats');
 var LangAPI = require('./lib/langapi');
 
 program
-  .version('1.0.0')
+  .version(require('./lib/version'))
   .usage('[culture] [options]')
   .description('(e.g. \'ru-ru\' run langtool languages to see available. if culture is not specified will default to \'en\')')
   .option('-a, --application [code]', 'Filters sections or translations by application code.', common.collect, [])

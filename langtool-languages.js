@@ -5,7 +5,7 @@ var common = require('./lib/common');
 var LangAPI = require('./lib/langapi');
 
 program
-  .version('1.0.0')
+  .version(require('./lib/version'))
   //.usage('[options]')
   .option('-k, --token [token]', 'API authentication token', '')
   .parse(process.argv);
