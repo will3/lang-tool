@@ -66,9 +66,11 @@ var output = new formats.ConsoleOutput();
 
   //console.log('getting data from API');
 
-  Q.all([entriesPromise(), translationsPromise()])
-    .spread(function(entries, translations) {
+  Q.all([entriesPromise(), translationsPromise(), languagesPromise()])
+    .spread(function(entries, translations, languageMap) {
       //console.log("got it! %j entries, %j translations", entries.length, translations.length);
+
+      program.languageDetail = languageMap[language];
 
       if (program.untranslated) {
         return missingTranslations(entries, translations);
@@ -102,6 +104,8 @@ var output = new formats.ConsoleOutput();
         note = "Untranslated only";
       } else if (program.translated) {
         note = "Translated only";
+      } else if (language == 'en') {
+        note = "";
       } else {
         note = "Translation and English defaults";
       }
@@ -266,6 +270,17 @@ function mapEntry(entry, translation) {
       result.language = translation.Language;
     }
     return result;
+}
+
+function languagesPromise() {
+	return common.promiseRequest(langApi.languages())
+  	.then(function(data) {
+  		var map = {}
+  		for (var i = 0; i < data.length; i++) {
+        map[data[i].CultureCode] = data[i];
+  		};
+      return map;
+  	});
 }
 
 function entriesPromise() {
