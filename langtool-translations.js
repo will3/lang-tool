@@ -267,7 +267,7 @@ function mapEntry(entry, translation) {
     };
     if (translation) {
       result.text = translation.Text;
-      result.language = translation.Language;
+      result.language = translation.CultureCode;
     }
     return result;
 }
