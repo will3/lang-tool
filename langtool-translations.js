@@ -14,7 +14,6 @@ program
   .option('-a, --application [code]', 'Filters sections or translations by application code.', common.collect, [])
   .option('-s, --section [code]', 'Filters translation by section code', common.collect, [])
   .option('-v, --ver [version]', 'Version number to get translations for', /^(\d+\.\d+(\.\d+)?(\.\d+)?(\.\d+)?)$/, '')
-  //.option('-l, --language [code]', 'Language code to get translations for. Default \'en\'', /^([a-z]{2}(\-[a-z]{2})?)$/i, 'en')
   .option('-f, --format [fmt]', 'Format to output translations in. Supported formats are: text, json, android, ios. Default \'text\'', /^(text|json|android|ios)$/i, 'text')
   .option('-t, --translated', 'Output translated items only')
   .option('-u, --untranslated', 'Output untranslated items only')
@@ -23,7 +22,7 @@ program
   .option('-d, --searchDefault [text]', 'Searches translations by default English text containing text')
   .option('-x, --searchTranslated [text]', 'Searches translations by translated text containing text')
   .option('-h, --hash', 'When -o is used this will check exiting file and only overwrite when translations changed')
-  .option('-k, --token [token]', 'API authentication token', '')
+  //.option('-k, --token [token]', 'API authentication token', '')
   .parse(process.argv);
 
 var languages = program.args;
@@ -46,9 +45,9 @@ if (program.application.length === 0 && program.section.length === 0) {
 	common.exitWithError('must specify application filter or section filter');
 }
 
-if (!program.token) {
+/*if (!program.token) {
 	common.exitWithError('must specify API token');
-} 
+} */
 
 program.format = program.format.toLowerCase();
 
