@@ -27,7 +27,7 @@ program
 
 var languages = program.args;
 if (languages.length > 1) {
-	common.exitWithError('only one culture at a time can be specified');
+	common.exitWithError('only one culture at a time can be specified', true);
 }
 
 var language = 'en';
@@ -38,7 +38,7 @@ if (languages.length > 0) {
 program.language = language;
 
 if (!/^([a-z]{2}(\-[a-z0-9]{2,3})?)$/i.test(language)) {
-	common.exitWithError(language + ' is not a valid culture code');
+	common.exitWithError(language + ' is not a valid culture code', true);
 }
 
 if (program.application.length === 0 && program.section.length === 0) {
@@ -91,7 +91,7 @@ var output = new formats.ConsoleOutput();
 	  	if (failed.length > 0) {
 	  		console.log('these entries had problems in string format placeholders');
 	  		console.log(failed);
-      		common.exitWithError('some entries had problems in string format placeholders');
+      		common.exitWithError('some entries had problems in string format placeholders', true);
       	}
 
         return data;
@@ -115,13 +115,13 @@ var output = new formats.ConsoleOutput();
 	    if (program.hash && fs.existsSync(program.output)) {
 	    	// outpu exists. check if text has changed
 		    var fileContent = fs.readFileSync(program.output, "utf8");
-			var hash = format.extractHash(fileContent);
+			  var hash = format.extractHash(fileContent);
 
-			if (formats.hashTranslations(data) == hash) {
-				console.log('Will not output, since strings have not changed in', program.output, '(hash: '+hash+')');
+			  if (formats.hashTranslations(data) == hash) {
+				  console.log('Will not output, since strings have not changed in', program.output, '(hash: '+hash+')');
 		    	process.exit(0);  
 		    }
-		}
+		  }
 
 	    stream = fs.createWriteStream(program.output);
 	    output = new formats.FileOutput(stream);	    
