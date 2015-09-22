@@ -266,6 +266,15 @@ function mapEntry(entry, translation) {
         context: entry.Context,
         language: 'en'
     };
+
+    if (entry.VersionAddedIn) {
+      result.versionAddedIn = entry.VersionAddedIn;
+    }
+
+    if (entry.VersionRemovedIn) {
+      result.versionRemovedIn = entry.VersionRemovedIn;
+    }
+
     if (translation) {
         result.text = translation.Text;
         result.language = translation.CultureCode;
