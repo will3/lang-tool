@@ -288,9 +288,9 @@ function entriesPromise() {
     return common.promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault))
         .then(function(data) {
             return data.sort(function(a, b) {
-                var result = a.Code.localeCompare(b.Code);
+                var result = a.Code.toLowerCase().localeCompare(b.Code.toLowerCase());
                 if (result === 0) {
-                    return a.Section.localeCompare(b.Section);
+                    return a.Section.toLowerCase().localeCompare(b.Section.toLowerCase());
                 } else {
                     return result;
                 }
