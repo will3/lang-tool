@@ -1,6 +1,6 @@
 {
   "name": "langtool-node",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Wrapper around Vista Langauge API with extra goodness",
   "preferGlobal": true,
   "bin": {

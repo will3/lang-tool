@@ -23,6 +23,7 @@ program
     .option('-d, --searchDefault [text]', 'Searches translations by default English text containing text')
     .option('-x, --searchTranslated [text]', 'Searches translations by translated text containing text')
     .option('-h, --hash', 'When -o is used this will check exiting file and only overwrite when translations changed')
+    .option('--usetext', 'Use Translation Text as identifier instead of Code, defaults to false')
     //.option('-k, --token [token]', 'API authentication token', '')
     .parse(process.argv);
 
@@ -259,7 +260,7 @@ function mapEntry(entry, translation) {
     var result = {
         id: entry.Id,
         section: entry.Section,
-        code: entry.Code.replace(' ', ''),
+        code: program.usetext ? entry.Text : entry.Code.replace(' ', ''),
         text: entry.Text,
         defaultText: entry.Text,
         notes: entry.Notes,
@@ -297,6 +298,7 @@ function entriesPromise() {
     return common.promiseRequest(langApi.entries(program.application, program.section, null, program.ver, program.searchDefault))
         .then(function(data) {
             return data.sort(function(a, b) {
+                if(!a.Code || !b.Code) return 0;
                 var result = a.Code.toLowerCase().localeCompare(b.Code.toLowerCase());
                 if (result === 0) {
                     return a.Section.toLowerCase().localeCompare(b.Section.toLowerCase());
